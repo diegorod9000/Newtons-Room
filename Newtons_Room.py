@@ -34,6 +34,15 @@ class Vector:
         pygame.draw.line(win, (180, 40, 20), self.origin, self.end)
         
 
+class Surface:
+    def __init__(self, loc_origin, loc_out, fric = 0):
+        self.origin = loc_origin
+        self.end = loc_out
+        self.fric = 0
+    
+    def draw(self):
+        pygame.draw.line(win, (90, 40, 20), self.origin, self.end)
+    
 
 class playerBall:
     def __init__(self, loc, radius):
@@ -75,7 +84,7 @@ class playerTarget:
     def detectVictiory(self, playerLoc):
         dist = ((self.loc[0]-playerLoc[0])**2 + (self.loc[1]-playerLoc[1])**2)**0.5
         
-        return dist<25
+        return dist<30
         
 
 
@@ -242,6 +251,84 @@ def predictionLevel(playerLoc):
         pygame.event.pump()
         pygame.display.update()
     return True
+
+def predictionLevel_hard(playerLoc, numArrows):
+    
+    run = True #Keeps the game running
+    prev_space_state = False
+    prev_click_state = False
+    forceArrows = []
+    for i in range(numArrows):
+        forceArrows.append(Vector(playerLoc, [random.randint(playerLoc[0]-200, playerLoc[0]+200),random.randint(playerLoc[1]-200, playerLoc[1]+200)]))
+    player = playerBall(playerLoc, 20)
+    
+    goal = playerTarget([0,0])
+
+    movestate = False
+    pygame.event.pump()
+    while run:
+        win.fill((220, 220, 220)) #resets background
+        # Current_click_state = pygame.mouse.get_pressed() #Checks mouse input
+        
+        key_states = pygame.key.get_pressed() #Detects key presses
+        
+        player.draw() #Draws player ball
+        goal.draw()
+            
+        if not movestate: #Still state code
+            
+            for arrow in forceArrows:
+                arrow.draw()
+                
+            if(pygame.mouse.get_pressed()[0]):
+                if not prev_click_state:
+                    prev_click_state = True
+                    if distBetween(playerLoc, pygame.mouse.get_pos()) >250:
+                        goal = playerTarget(pygame.mouse.get_pos())
+                    
+            else:
+                prev_click_state = False
+                
+        else: #Move state
+            player.update()
+            if goal.detectVictiory(player.loc): #Ends the game if you press escape
+                run = False
+                return True
+
+
+
+        #Code that runs regardless of state
+        
+        if key_states[pygame.K_SPACE]: #changes move state upon space press
+            if not prev_space_state:
+                movestate = not movestate
+                if not movestate: 
+                    #Resets if going from move to still state
+                    player = playerBall(playerLoc.copy(), 20)
+                    forceArrows = []
+                    for i in range(numArrows):
+                        forceArrows.append(Vector(playerLoc, [random.randint(playerLoc[0]-200, playerLoc[0]+200),random.randint(playerLoc[1]-200, playerLoc[1]+200)]))
+                else:
+                    player.set_accel(forceArrows)
+                
+                prev_space_state = True
+        else:
+            prev_space_state = False
+        
+        
+        if key_states[pygame.K_a]:
+            return False
+            
+        if key_states[pygame.K_d]:
+            return True
+        
+        if key_states[pygame.K_ESCAPE]:
+            run = False
+            pygame.quit()
+            
+        pygame.event.pump()
+        pygame.display.update()
+    return True
     
 if __name__ == '__main__':  # Runner
     pygame.init()
@@ -254,24 +341,63 @@ if __name__ == '__main__':  # Runner
             pygame.display.set_caption("Get the blue sphere to the green sphere!")
             if level1([300,650], [300,100]):
                 levelIndex+=1
+        
         elif levelIndex == 1:
-            pygame.display.set_caption("Don't worry, it gets more complex from here.")
-            if level1([150,650], [700,100]):
+            pygame.display.set_caption("Easy peasy.")
+            if level1([150,450], [700,450]):
                 levelIndex+=1
             else:
                 levelIndex-=1
+            
         elif levelIndex == 2:
+            pygame.display.set_caption("2 Arrows!")
+            if level1([175,550], [350,250]):
+                levelIndex+=1
+            else:
+                levelIndex-=1
+        elif levelIndex == 3:
+            pygame.display.set_caption("I think you're getting the hang of this")
+            if level1([800,650],[122, 79]):
+                levelIndex+=1
+            else:
+                levelIndex-=1
+                
+        elif levelIndex == 4:
             pygame.display.set_caption("Can you predict the trajectory?")
             if predictionLevel([450,350]):
                 levelIndex+=1
             else:
                 levelIndex-=1
-        elif levelIndex == 3:
-            pygame.display.set_caption("You're getting the hang of this!")
+        elif levelIndex == 5:
+            pygame.display.set_caption("Impressive!")
             if predictionLevel([300,200]):
                 levelIndex+=1
             else:
                 levelIndex-=1
+        elif levelIndex == 6:
+            pygame.display.set_caption("Oh wait this one is actually easy.")
+            if predictionLevel_hard([450,350], 1):
+                levelIndex+=1
+            else:
+                levelIndex-=1
+        elif levelIndex == 7:
+            pygame.display.set_caption("This one isn't so easy though!")
+            if predictionLevel_hard([450,350], 2):
+                levelIndex+=1
+            else:
+                levelIndex-=1
+        elif levelIndex == 8:
+            pygame.display.set_caption("This gets hard quickly! Think you still got it?")
+            if predictionLevel_hard([450,350], 3):
+                levelIndex+=1
+            else:
+                levelIndex-=1
+        elif levelIndex == 9:
+            pygame.display.set_caption("This is getting out of hand.")
+            if predictionLevel_hard([450,350], 4):
+                levelIndex+=1
+            else:
+                levelIndex-=14
         
         if levelIndex<0:
             levelIndex = 0

@@ -1,16 +1,13 @@
 import pygame
 import random
+import time
 
-class Physics_object:
-    def __init__(self, mass, loc):
-        self.yAccel = .98
-        self.yVel = 0
-        self.xAccel = 0
-        self.xVel = 0
-        self.x = loc[0]
-        self.y = loc[1]
-        self.mass = mass
 
+
+def distBetween(loc1,loc2):
+    xDist = (loc1[0] - loc2[0])**2
+    yDist = (loc1[1] - loc2[1])**2
+    return (xDist + yDist)**0.5
 
 class Vector:
     def __init__(self, loc_origin, loc_out):
@@ -85,7 +82,7 @@ class playerTarget:
 
     
     
-
+levelIndex = 0
 def level1(playerLoc, targetLoc): #Normal levels. Player makes forces, ball moves way it's supposed.
     
     run = True #Keeps the game running
@@ -99,6 +96,7 @@ def level1(playerLoc, targetLoc): #Normal levels. Player makes forces, ball move
     goal = playerTarget(targetLoc)
 
     movestate = False
+    pygame.event.pump()
     while run:
         win.fill((220, 220, 220)) #resets background
         # Current_click_state = pygame.mouse.get_pressed() #Checks mouse input
@@ -128,6 +126,7 @@ def level1(playerLoc, targetLoc): #Normal levels. Player makes forces, ball move
             player.update()
             if goal.detectVictiory(player.loc): #Ends the game if you press escape
                 run = False
+                return True
 
 
 
@@ -154,7 +153,11 @@ def level1(playerLoc, targetLoc): #Normal levels. Player makes forces, ball move
         elif key_states[pygame.K_RIGHT] or key_states[pygame.K_LEFT]:
             forceIndex = 0
         
-        
+        if key_states[pygame.K_a]:
+            return False
+            
+        if key_states[pygame.K_d]:
+            return True
         
         
         if key_states[pygame.K_ESCAPE]:
@@ -163,6 +166,7 @@ def level1(playerLoc, targetLoc): #Normal levels. Player makes forces, ball move
             
         pygame.event.pump()
         pygame.display.update()
+    return True
         
 
 def predictionLevel(playerLoc):
@@ -176,6 +180,7 @@ def predictionLevel(playerLoc):
     goal = playerTarget([0,0])
 
     movestate = False
+    pygame.event.pump()
     while run:
         win.fill((220, 220, 220)) #resets background
         # Current_click_state = pygame.mouse.get_pressed() #Checks mouse input
@@ -193,7 +198,8 @@ def predictionLevel(playerLoc):
             if(pygame.mouse.get_pressed()[0]):
                 if not prev_click_state:
                     prev_click_state = True
-                    goal = playerTarget(pygame.mouse.get_pos())
+                    if distBetween(playerLoc, pygame.mouse.get_pos()) >200:
+                        goal = playerTarget(pygame.mouse.get_pos())
                     
             else:
                 prev_click_state = False
@@ -202,6 +208,7 @@ def predictionLevel(playerLoc):
             player.update()
             if goal.detectVictiory(player.loc): #Ends the game if you press escape
                 run = False
+                return True
 
 
 
@@ -222,27 +229,54 @@ def predictionLevel(playerLoc):
             prev_space_state = False
         
         
+        if key_states[pygame.K_a]:
+            return False
+            
+        if key_states[pygame.K_d]:
+            return True
+        
         if key_states[pygame.K_ESCAPE]:
             run = False
             pygame.quit()
             
         pygame.event.pump()
         pygame.display.update()
+    return True
     
 if __name__ == '__main__':  # Runner
     pygame.init()
     windowWidth = 900
     windowHeight = 700
     win = pygame.display.set_mode((windowWidth, windowHeight))
-    pygame.display.set_caption("Get the blue sphere to the green sphere!")
-    level1([300,650], [300,100])
-    
-    pygame.display.set_caption("Don't worry, it gets more complex from here.")
-    level1([150,650], [700,100])
-    
-    pygame.display.set_caption("Can you predict the trajectory?")
-    predictionLevel([450,350])
-    
+    levelIndex = 0
+    while(levelIndex<50):
+        if levelIndex == 0:
+            pygame.display.set_caption("Get the blue sphere to the green sphere!")
+            if level1([300,650], [300,100]):
+                levelIndex+=1
+        elif levelIndex == 1:
+            pygame.display.set_caption("Don't worry, it gets more complex from here.")
+            if level1([150,650], [700,100]):
+                levelIndex+=1
+            else:
+                levelIndex-=1
+        elif levelIndex == 2:
+            pygame.display.set_caption("Can you predict the trajectory?")
+            if predictionLevel([450,350]):
+                levelIndex+=1
+            else:
+                levelIndex-=1
+        elif levelIndex == 3:
+            pygame.display.set_caption("You're getting the hang of this!")
+            if predictionLevel([300,200]):
+                levelIndex+=1
+            else:
+                levelIndex-=1
+        
+        if levelIndex<0:
+            levelIndex = 0
+        time.sleep(0.4)
+        
     
     
     pygame.quit()

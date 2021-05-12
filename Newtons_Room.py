@@ -50,13 +50,40 @@ class Surface:
     def draw(self):
         pygame.draw.line(win, (90, 40, 20), self.origin, self.end)
         
-    def detectCollision_horizontal(self, player):
-        if not (player.loc[0] < self.end[0] and player.loc[0] > self.end[1]):
+    def detectCollision_vertical(self, player):
+        if (player.loc[0] < self.end[0] and player.loc[0] < self.origin[0]) or (player.loc[0] > self.end[0] and player.loc[0] > self.origin[0]):
             return False
         playerYMax = player.loc[1] + player.radius
         playerYMin = player.loc[1] - player.radius
         if playerYMax > self.end[1] and playerYMin < self.end[1]:
-            player.loc[1] = self.end[1] - player.radius
+            return True
+        return False
+    
+    def detectCollision_horizontal(self, player):
+        if (player.loc[1] < self.end[1] and player.loc[1] < self.origin[1]) or (player.loc[1] > self.end[1] and player.loc[1] > self.origin[1]):
+            return False
+        playerXMax = player.loc[0] + player.radius
+        playerXMin = player.loc[0] - player.radius
+        if playerXMax > self.end[0] and playerXMin < self.end[0]:
+            return True
+        return False
+    
+    def bounceUp(self, player):
+        player.loc[1] = self.end[1] - player.radius - 1
+        player.vel[1] = -player.vel[1]
+        
+    def bounceDown(self, player):
+        player.loc[1] = self.end[1] + player.radius + 1
+        player.vel[1] = -player.vel[1]
+        
+    def bounceLeft(self, player):
+        player.loc[0] = self.end[0] - player.radius - 1
+        player.vel[0] = -player.vel[0]
+        
+    def bounceRight(self, player):
+        player.loc[0] = self.end[0] + player.radius + 1
+        player.vel[0] = -player.vel[0]
+        
     
     def friction(self, player):
         pass
@@ -536,6 +563,8 @@ def predictionLevel_Gravity(playerLoc, numArrows):
     run = True #Keeps the game running
     prev_space_state = False
     prev_click_state = False
+    # if boundaries:
+        
     forceArrows = [Vector(playerLoc, [playerLoc[0], playerLoc[1] + 80])]
     for i in range(numArrows):
         forceArrows.append(Vector(playerLoc, [random.randint(playerLoc[0]-200, playerLoc[0]+200),random.randint(playerLoc[1]-200, playerLoc[1]+200)]))
@@ -563,14 +592,14 @@ def predictionLevel_Gravity(playerLoc, numArrows):
                 if not prev_click_state:
                     prev_click_state = True
                     if distBetween(playerLoc, pygame.mouse.get_pos()) >250:
-                        goal = playerTarget(pygame.mouse.get_pos())
+                        goal = playerTarget(pygame.mouse.get_pos(), 45)
                     
             else:
                 prev_click_state = False
                 
         else: #Move state
             player.update()
-            if goal.detectVictiory(player.loc): #Ends the game if you press escape
+            if goal.detectVictiory_big(player.loc): #Ends the game if you press escape
                 run = False
                 return True
 
@@ -609,9 +638,10 @@ def predictionLevel_Gravity(playerLoc, numArrows):
         pygame.display.update()
     return True
 
-def target_Momentum(playerLoc, targetLoc):
+def target_Momentum(playerLoc, targetLoc, hasBoundaries = False):
     run = True #Keeps the game running
     
+    boundary = Surface([0, 700], [900, 700])
     prev_space_state = False
     prev_click_state = False
     forceArrows = [Vector(playerLoc, [playerLoc[0], playerLoc[1] + 80])]
@@ -652,6 +682,10 @@ def target_Momentum(playerLoc, targetLoc):
                 
         else: #Move state
             player.update()
+            if hasBoundaries:
+                boundary.draw()
+                if boundary.detectCollision_vertical(player):
+                    boundary.bounceUp(player)
             if goal.detectVictiory_big(player.loc): #Ends the game if you press escape
                 run = False
                 return True
@@ -698,6 +732,92 @@ def target_Momentum(playerLoc, targetLoc):
         pygame.display.update()
     return True
     
+    
+def predictionLevel_Momentum(playerLoc, numArrows):
+    
+    run = True #Keeps the game running
+    prev_space_state = False
+    prev_click_state = False
+    # if boundaries:
+        
+    forceArrows = [Vector(playerLoc, [playerLoc[0], playerLoc[1] + 80])]
+    momentumArrows = []
+    for i in range(numArrows):
+        momentumArrows.append(Vector(playerLoc, [random.randint(playerLoc[0]-200, playerLoc[0]+200),random.randint(playerLoc[1]-200, playerLoc[1]+200)]))
+    player = playerBall(playerLoc, 20)
+    
+    goal = playerTarget([-30,-30])
+
+    movestate = False
+    pygame.event.pump()
+    while run:
+        win.fill((220, 220, 220)) #resets background
+        # Current_click_state = pygame.mouse.get_pressed() #Checks mouse input
+        
+        key_states = pygame.key.get_pressed() #Detects key presses
+        
+        player.draw() #Draws player ball
+        goal.draw()
+            
+        if not movestate: #Still state code
+            
+            for arrow in forceArrows:
+                arrow.draw()
+            for arrow in momentumArrows:
+                arrow.draw_blue()
+                
+            if(pygame.mouse.get_pressed()[0]):
+                if not prev_click_state:
+                    prev_click_state = True
+                    if distBetween(playerLoc, pygame.mouse.get_pos()) >250:
+                        goal = playerTarget(pygame.mouse.get_pos(), 45)
+                    
+            else:
+                prev_click_state = False
+                
+        else: #Move state
+            player.update()
+            if goal.detectVictiory_big(player.loc): #Ends the game if you press escape
+                run = False
+                return True
+
+
+
+        #Code that runs regardless of state
+        
+        if key_states[pygame.K_SPACE]: #changes move state upon space press
+            if not prev_space_state:
+                movestate = not movestate
+                if not movestate: 
+                    #Resets if going from move to still state
+                    player = playerBall(playerLoc.copy(), 20)
+                    forceArrows = [Vector(playerLoc, [playerLoc[0], playerLoc[1] + 80])]
+                    momentumArrows = []
+                    for i in range(numArrows):
+                        momentumArrows.append(Vector(playerLoc, [random.randint(playerLoc[0]-200, playerLoc[0]+200),random.randint(playerLoc[1]-200, playerLoc[1]+200)]))
+                else:
+                    player.set_accel(forceArrows)
+                    player.set_vel(momentumArrows)
+                
+                prev_space_state = True
+        else:
+            prev_space_state = False
+        
+        
+        if key_states[pygame.K_a]:
+            return False
+            
+        if key_states[pygame.K_d]:
+            return True
+        
+        if key_states[pygame.K_ESCAPE]:
+            run = False
+            pygame.quit()
+            
+        pygame.event.pump()
+        pygame.display.update()
+    return True
+
 if __name__ == '__main__':  # Runner
     pygame.init()
     windowWidth = 900
@@ -808,12 +928,30 @@ if __name__ == '__main__':  # Runner
                 levelIndex+=1
             else:
                 levelIndex-=1
+        elif levelIndex == 17:
+            pygame.display.set_caption("Think you can predict now?")
+            if predictionLevel_Momentum([450,350], 1):
+                levelIndex+=1
+            else:
+                levelIndex-=1
+        elif levelIndex == 18:
+            pygame.display.set_caption("These still are hard.")
+            if predictionLevel_Momentum([450,350], 3):
+                levelIndex+=1
+            else:
+                levelIndex-=1
+        elif levelIndex == 19:
+            pygame.display.set_caption("The target's too far away! but now the floor is bouncy!")
+            if target_Momentum([75,200], [825,200], True):
+                pass
+            else:
+                levelIndex-=1
         
         
         
         if levelIndex<0:
             levelIndex = 0
-        time.sleep(0.4)
+        time.sleep(0.3)
         
     
     

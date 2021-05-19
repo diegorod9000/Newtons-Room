@@ -147,7 +147,7 @@ class playerTarget:
     
     
 levelIndex = 0
-def zeroGravity(playerLoc, targetLoc): #Normal levels. Player makes forces, ball moves way it's supposed.
+def zeroGravityLevel(playerLoc, targetLoc): #Normal levels. Player makes forces, ball moves way it's supposed.
     
     run = True #Keeps the game running
     
@@ -393,7 +393,7 @@ def gravitySurvival():
     prev_click_state = False
     forceArrows = [Vector(playerLoc, playerLoc),Vector(playerLoc, playerLoc), Vector(playerLoc, [playerLoc[0], playerLoc[1] + 80])]
     player = playerBall(playerLoc, 20)
-    survivalTime = 0
+    survivalTime = 500
     forceIndex = 0
 
     movestate = False
@@ -424,8 +424,8 @@ def gravitySurvival():
                 
         else: #Move state
             player.update()
-            survivalTime +=1
-            if survivalTime==500:
+            survivalTime -=1
+            if survivalTime==0:
                 return True
             if player.loc[1]<10 or player.loc[1]>690 or player.loc[0]<10 or player.loc[0]>890:
                 player = playerBall(playerLoc.copy(), 20)
@@ -824,34 +824,35 @@ if __name__ == '__main__':  # Runner
     windowHeight = 700
     win = pygame.display.set_mode((windowWidth, windowHeight))
     levelIndex = 0
-    while(levelIndex<50):
+    
+    while True:
         if levelIndex == 0:
-            pygame.display.set_caption("Get the blue sphere to the green sphere!")
-            if zeroGravity([300,650], [300,100]):
+            pygame.display.set_caption("Get the blue sphere to the green sphere! Press up or down to set your arrows to vertical, and click to place an arrow. Press space when you're ready, and space again to reset!")
+            if zeroGravityLevel([300,650], [300,100]):
                 levelIndex+=1
         
         elif levelIndex == 1:
-            pygame.display.set_caption("Easy peasy.")
-            if zeroGravity([150,450], [700,450]):
+            pygame.display.set_caption("Easy peasy. Press left or right to set arrows to horizontal.")
+            if zeroGravityLevel([150,450], [700,450]):
                 levelIndex+=1
             else:
                 levelIndex-=1
             
         elif levelIndex == 2:
-            pygame.display.set_caption("2 Arrows!")
-            if zeroGravity([175,550], [350,250]):
+            pygame.display.set_caption("You can have 2 Arrows at the same time! Experiment with it!")
+            if zeroGravityLevel([175,550], [350,250]):
                 levelIndex+=1
             else:
                 levelIndex-=1
         elif levelIndex == 3:
             pygame.display.set_caption("I think you're getting the hang of this")
-            if zeroGravity([800,650],[122, 79]):
+            if zeroGravityLevel([800,650],[122, 79]):
                 levelIndex+=1
             else:
                 levelIndex-=1
                 
         elif levelIndex == 4:
-            pygame.display.set_caption("Can you predict the trajectory?")
+            pygame.display.set_caption("Can you predict the trajectory? Hint: think of the vertical and horizontal arrows as separate")
             if predictionLevel([450,350]):
                 levelIndex+=1
             else:
@@ -869,7 +870,7 @@ if __name__ == '__main__':  # Runner
             else:
                 levelIndex-=1
         elif levelIndex == 7:
-            pygame.display.set_caption("This one isn't so easy though!")
+            pygame.display.set_caption("This one isn't so easy though! Hint: Arrows can partially cancel each other out, or add to each other")
             if predictionLevel_hard([450,350], 2):
                 levelIndex+=1
             else:
@@ -941,7 +942,7 @@ if __name__ == '__main__':  # Runner
             else:
                 levelIndex-=1
         elif levelIndex == 19:
-            pygame.display.set_caption("The target's too far away! but now the floor is bouncy!")
+            pygame.display.set_caption("The target's too far away! but now the floor is bouncy! Try hitting the floor!")
             if target_Momentum([75,200], [825,200], True):
                 pass
             else:
